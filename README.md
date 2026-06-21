@@ -68,3 +68,4 @@ The app has no client state framework or external UI kit. Server components hand
 - Add error monitoring, analytics with consent, database backups, and a privacy policy.
 - Commit Prisma migrations and run them in CI before production deploys.
 - Add Playwright end-to-end coverage for registration, both vote rounds, moderation, and mobile layouts.
+# ratio
