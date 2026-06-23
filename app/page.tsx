@@ -15,15 +15,15 @@ const QUESTIONS = [
 export default function PollPage() {
   const [step, setStep] = useState("intro");
   const [current, setCurrent] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [answers, setAnswers] = useState({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const q = QUESTIONS[current];
   const isLast = current === QUESTIONS.length - 1;
 
   function handleNext() {
     if (!selected) return;
-    const next = { ...answers, [q.id]: selected };
+    const next: Record<number, string> = { ...answers, [q.id]: selected };
     setAnswers(next);
     setSelected(null);
     if (isLast) { setStep("done"); } else { setCurrent((c) => c + 1); }
