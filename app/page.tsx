@@ -1,62 +1,96 @@
-import Link from "next/link";
-import { ArrowRight, BarChart3, MessageSquareQuote, RefreshCcw } from "lucide-react";
-import { db } from "@/lib/db";
-import { PollCard } from "@/components/poll-card";
+"use client";
+import { useState } from "react";
 
-export const dynamic = "force-dynamic";
+const QUESTIONS = [
+  { id: 1, kicker: "Awareness", question: "Have you heard that a large AI data center is being proposed for Spencer County?", options: ["Yes, I've heard about it", "I've heard something about it", "No, this is news to me"] },
+  { id: 2, kicker: "Awareness", question: "How informed do you feel about what a data center would mean for your community?", options: ["Very informed", "Somewhat informed", "Not informed at all"] },
+  { id: 3, kicker: "The Promise", question: "Do you believe a data center would create meaningful long-term jobs for Spencer County residents?", options: ["Yes, I believe it would", "Maybe, but I'm skeptical", "No, I don't think so"] },
+  { id: 4, kicker: "The Promise", question: "Do you think AI infrastructure development benefits rural communities or primarily benefits corporations?", options: ["It benefits rural communities", "It benefits both equally", "It primarily benefits corporations"] },
+  { id: 5, kicker: "The Cost", question: "Are you aware that AI data centers consume massive amounts of electricity and water?", options: ["Yes, I knew this", "I had some idea", "No, I wasn't aware"] },
+  { id: 6, kicker: "The Cost", question: "CenterPoint Energy has proposed rate increases tied to infrastructure expansion. Did you know this?", options: ["Yes, I knew about the rate increases", "I'd heard something about it", "No, I had no idea"] },
+  { id: 7, kicker: "The Cost", question: "Do you think utility customers should pay higher rates to support corporate data center development?", options: ["Yes, if it brings economic growth", "Only with full transparency and consent", "No, corporations should pay their own way"] },
+  { id: 8, kicker: "The Real Question", question: "If an AI data center comes to Spencer County, who should foot the bill for the infrastructure it requires?", options: ["Ratepayers — utility customers like me", "The corporations building and using the data center", "A shared arrangement with full public transparency", "I don't know enough to say"] },
+];
 
-export default async function HomePage() {
-  const polls = await db.poll.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { createdAt: "desc" },
-    take: 3,
-    include: { _count: { select: { votes: true, arguments: true } } }
-  });
+export default function PollPage() {
+  const [step, setStep] = useState("intro");
+  const [current, setCurrent] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answers, setAnswers] = useState({});
+
+  const q = QUESTIONS[current];
+  const isLast = current === QUESTIONS.length - 1;
+
+  function handleNext() {
+    if (!selected) return;
+    const next = { ...answers, [q.id]: selected };
+    setAnswers(next);
+    setSelected(null);
+    if (isLast) { setStep("done"); } else { setCurrent((c) => c + 1); }
+  }
+
+  function handleBack() {
+    if (current === 0) { setStep("intro"); return; }
+    setCurrent((c) => c - 1);
+    setSelected(answers[QUESTIONS[current - 1].id] ?? null);
+  }
 
   return (
-    <>
-      <section className="hero">
-        <div className="hero-glow" />
-        <div className="shell hero-grid">
-          <div>
-            <div className="eyebrow"><span className="live-dot" /> A consensus engine for clearer thinking</div>
-            <h1>Think twice.<br /><span>Decide better.</span></h1>
-            <p className="hero-copy">Vote on the questions that matter. Test your position against the strongest arguments. Then decide where you truly stand.</p>
-            <div className="hero-actions">
-              <Link className="button" href="/register">Join the conversation <ArrowRight size={18} /></Link>
-              <Link className="button secondary" href="/dashboard">Explore questions</Link>
+    <div className="ratio-capsule-page">
+      <div className="capsule-atmosphere" />
+      <div className="capsule-device-stage">
+
+        {step === "intro" && (
+          <div className="capsule-interface is-visible">
+            <div className="capsule-handle" />
+            <div className="capsule-screen" style={{ minHeight: "660px", alignContent: "center" }}>
+              <p className="capsule-kicker">Spencer County</p>
+              <h1>Your county.<br />Your bill.<br />Your voice.</h1>
+              <p className="capsule-copy">A data center is coming. Utility rates may follow. Eight questions. Two minutes. Completely anonymous.</p>
+              <button className="capsule-action" onClick={() => setStep("poll")}>Begin</button>
+              <p className="capsule-whisper">No account. No email. No tracking.</p>
             </div>
-            <div className="trust-line"><span>Independent thinking</span><span>Constructive debate</span><span>Transparent results</span></div>
           </div>
-          <div className="hero-demo">
-            <div className="demo-top"><span>LIVE QUESTION</span><span>1,284 participants</span></div>
-            <h3>Should cities make public transit free?</h3>
-            <div className="demo-choice active"><span>A</span><div><strong>Yes</strong><small>Access should be universal</small></div><b>58%</b></div>
-            <div className="demo-choice"><span>B</span><div><strong>No</strong><small>Targeted support is more sustainable</small></div><b>42%</b></div>
-            <div className="demo-insight"><RefreshCcw size={17} /><span><strong>14% changed their view</strong> after reading arguments</span></div>
+        )}
+
+        {step === "poll" && (
+          <div className="capsule-interface is-visible stage-counter">
+            <div className="capsule-handle" />
+            <div className="capsule-screen">
+              <p className="capsule-kicker">Question {current + 1} of {QUESTIONS.length} &middot; {q.kicker}</p>
+              <h1>{q.question}</h1>
+              <div className="capsule-choices">
+                {q.options.map((opt) => (
+                  <button key={opt} className={"capsule-choice" + (selected === opt ? " is-selected" : "")} onClick={() => setSelected(opt)}>
+                    <span>{opt}</span>
+                    <i>{selected === opt ? "✓" : ""}</i>
+                  </button>
+                ))}
+              </div>
+              <button className="capsule-action" disabled={!selected} onClick={handleNext}>{isLast ? "Submit" : "Next"}</button>
+              {current > 0 && <button className="capsule-quiet" onClick={handleBack}>Back</button>}
+              <p className="capsule-whisper">{Math.round((current / QUESTIONS.length) * 100)}% complete</p>
+            </div>
           </div>
-        </div>
-      </section>
+        )}
 
-      <section className="section shell">
-        <div className="section-heading centered">
-          <div className="eyebrow">How Ratio works</div>
-          <h2>A better path to consensus</h2>
-          <p>Not another popularity contest. Ratio reveals how informed opinions evolve.</p>
-        </div>
-        <div className="steps">
-          <article><span className="step-icon"><BarChart3 /></span><b>01</b><h3>Take a position</h3><p>Cast an initial vote and record how confident you feel.</p></article>
-          <article><span className="step-icon"><MessageSquareQuote /></span><b>02</b><h3>Consider both sides</h3><p>Read concise arguments and direct rebuttals from the community.</p></article>
-          <article><span className="step-icon"><RefreshCcw /></span><b>03</b><h3>Vote again</h3><p>Confirm or change your position. Both outcomes are meaningful.</p></article>
-        </div>
-      </section>
+        {step === "done" && (
+          <div className="capsule-interface is-visible">
+            <div className="capsule-handle" />
+            <div className="capsule-ceremony is-complete">
+              <div className="ratio-eye" style={{ margin: "0 auto 8px" }}>
+                <div className="ratio-eye-ring" />
+                <div className="ratio-eye-core" />
+              </div>
+              <p className="capsule-kicker">Response recorded</p>
+              <h1>Thank you, Spencer County.</h1>
+              <p className="capsule-copy">Your voice has been counted. Results from this community will help shape the conversation around AI, energy, and who really pays the price.</p>
+              <p className="capsule-whisper">Your response was submitted anonymously.</p>
+            </div>
+          </div>
+        )}
 
-      {polls.length > 0 && (
-        <section className="section shell">
-          <div className="section-heading row"><div><div className="eyebrow">Open now</div><h2>Questions worth considering</h2></div><Link href="/dashboard">View all <ArrowRight size={16} /></Link></div>
-          <div className="poll-grid">{polls.map((poll) => <PollCard key={poll.slug} poll={poll} />)}</div>
-        </section>
-      )}
-    </>
+      </div>
+    </div>
   );
 }
